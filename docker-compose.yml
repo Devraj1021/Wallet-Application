@@ -1,0 +1,10 @@
+services:
+  wallet-app:
+    build: .
+    container_name: wallet-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://pg-124ed31c-devrajbhatade099-4e87.i.aivencloud.com:24374/WalletServiceApplication?sslmode=require
+      SPRING_DATASOURCE_USERNAME: avnadmin
+      SPRING_DATASOURCE_PASSWORD: AVNS_ynnWEmXYEycNBNeOZOy
+    ports:
+      - "8080:8080"
