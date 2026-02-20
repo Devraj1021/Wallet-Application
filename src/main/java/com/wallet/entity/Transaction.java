@@ -18,7 +18,7 @@ public class Transaction {
     @Column(unique = true, nullable = false)
     private String referenceId;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "wallet_id")
     private Wallet wallet;
 

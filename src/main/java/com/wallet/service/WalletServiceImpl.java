@@ -2,14 +2,18 @@ package com.wallet.service;
 
 import com.wallet.dto.BalanceResponse;
 import com.wallet.dto.TransactionResponse;
+import com.wallet.entity.EntryType;
+import com.wallet.entity.LedgerEntry;
 import com.wallet.entity.Transaction;
 import com.wallet.entity.Wallet;
 import com.wallet.exception.DuplicateTransactionException;
 import com.wallet.exception.InsufficientBalanceException;
 import com.wallet.exception.WalletNotFoundException;
+import com.wallet.repository.LedgerRepository;
 import com.wallet.repository.TransactionRepository;
 import com.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +25,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WalletServiceImpl implements WalletService {
 
-    private final WalletRepository walletRepository;
-    private final TransactionRepository transactionRepository;
+    @Autowired
+    WalletRepository walletRepository;
+
+    @Autowired
+    TransactionRepository transactionRepository;
+
+    @Autowired
+    LedgerRepository ledgerRepository;
 
     // Get Balance
     @Override
@@ -32,7 +42,8 @@ public class WalletServiceImpl implements WalletService {
                 .findByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
 
-        return new BalanceResponse(userId, wallet.getBalance());
+        Long balance = ledgerRepository.calculateBalance(wallet.getId());
+        return new BalanceResponse(userId, balance);
     }
 
     // TopUp
@@ -65,12 +76,10 @@ public class WalletServiceImpl implements WalletService {
                 .orElseThrow(WalletNotFoundException::new);
 
         // Check balance
-        if (wallet.getBalance() < amount) {
+        Long balance = ledgerRepository.calculateBalance(wallet.getId());
+        if (balance < amount) {
             throw new InsufficientBalanceException();
         }
-
-        // Deduct balance
-        wallet.setBalance(wallet.getBalance() - amount);
 
         // Create transaction
         Transaction transaction = new Transaction();
@@ -83,15 +92,35 @@ public class WalletServiceImpl implements WalletService {
         transaction.setStatus("SUCCESS");
         transaction.setCreatedAt(LocalDateTime.now());
 
-        transactionRepository.save(transaction);
-        walletRepository.save(wallet);
+        transaction = transactionRepository.save(transaction);
+
+        // User DEBIT
+        ledgerRepository.save(new LedgerEntry(
+                wallet,
+                transaction,
+                EntryType.DEBIT,
+                amount,
+                LocalDateTime.now()
+        ));
+
+        // Treasury CREDIT
+        ledgerRepository.save(new LedgerEntry(
+                wallet,
+                transaction,
+                EntryType.CREDIT,
+                amount,
+                LocalDateTime.now()
+        ));
+
+        // Check balance
+        balance = ledgerRepository.calculateBalance(wallet.getId());
 
         return new TransactionResponse(
                 transaction.getId(),
                 userId,
                 "SPEND",
                 amount,
-                wallet.getBalance(),
+                balance,
                 "SUCCESS"
         );
     }
@@ -113,9 +142,6 @@ public class WalletServiceImpl implements WalletService {
                 .findByUserIdForUpdate(userId)
                 .orElseThrow(WalletNotFoundException::new);
 
-        // Add balance
-        wallet.setBalance(wallet.getBalance() + amount);
-
         // Create transaction
         Transaction transaction = new Transaction();
         transaction.setId(UUID.randomUUID());
@@ -126,15 +152,35 @@ public class WalletServiceImpl implements WalletService {
         transaction.setDirection("CREDIT");
         transaction.setStatus("SUCCESS");
 
-        transactionRepository.save(transaction);
-        walletRepository.save(wallet);
+        transaction = transactionRepository.save(transaction);
+
+        // User DEBIT
+        ledgerRepository.save(new LedgerEntry(
+                wallet,
+                transaction,
+                EntryType.DEBIT,
+                amount,
+                LocalDateTime.now()
+        ));
+
+        // Treasury CREDIT
+        ledgerRepository.save(new LedgerEntry(
+                wallet,
+                transaction,
+                EntryType.CREDIT,
+                amount,
+                LocalDateTime.now()
+        ));
+
+        // Check balance
+        Long balance = ledgerRepository.calculateBalance(wallet.getId());
 
         return new TransactionResponse(
                 transaction.getId(),
                 userId,
                 transactionType,
                 amount,
-                wallet.getBalance(),
+                balance,
                 "SUCCESS"
         );
     }

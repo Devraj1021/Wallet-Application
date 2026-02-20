@@ -19,8 +19,5 @@ public class Wallet {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(nullable = false)
-    private Long balance;
-
     private LocalDateTime createdAt;
 }
