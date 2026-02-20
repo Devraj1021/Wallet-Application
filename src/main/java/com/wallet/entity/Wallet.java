@@ -23,4 +23,9 @@ public class Wallet {
     private Long balance;
 
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "wallet",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true)
+    private java.util.List<Transaction> transactions = new java.util.ArrayList<>();
 }

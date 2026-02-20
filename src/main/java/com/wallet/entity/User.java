@@ -22,4 +22,9 @@ public class User {
     private String email;
 
     private LocalDateTime createdAt;
+
+    @OneToOne(mappedBy = "user",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true)
+    private Wallet wallet;
 }
