@@ -1,6 +1,7 @@
 package com.wallet.exception;
 
 import com.wallet.dto.ErrorResponse;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,10 +52,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex) {
 
+        ex.printStackTrace();
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "INTERNAL_SERVER_ERROR",
-                "Something went wrong"
+                ExceptionUtils.getStackTrace(ex)
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
