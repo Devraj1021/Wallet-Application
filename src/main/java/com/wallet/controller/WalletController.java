@@ -18,11 +18,11 @@ public class WalletController {
     private final WalletServiceImpl walletService;
 
     // Get Balance
-    @GetMapping("/{userId}/balance")
+    @GetMapping("/balance")
     public ResponseEntity<BalanceResponse> getBalance(
-            @PathVariable UUID userId) {
+           @Valid @RequestBody BalanceRequest request) {
 
-        BalanceResponse response = walletService.getBalance(userId);
+        BalanceResponse response = walletService.getBalance(request.getUserId());
         return ResponseEntity.ok(response);
     }
 
